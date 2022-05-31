@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Str;
 use App\Post;
 
 class PostController extends Controller
@@ -49,18 +49,7 @@ class PostController extends Controller
         $postData = $request->all();
         $newPost = new Post();
         $newPost->fill($postData);
-
-        $slug = Str::slug($newPost->title);
-        $counterSlug = $slug;
-        $postFound = Post::where('slug', $slug)->first();
-        $counter = 1;
-        while($postFound){
-            $counterSlug = $slug . '_' . $counter;
-            $counter++;
-            $postFound = Post::where('slug', $counterSlug)->first();
-        }
-
-        $newPost->slug = $counterSlug;
+        $newPost->slug = Post::createSlug($newPost->title);
         $newPost->save();
         return redirect()->route('admin.posts.index');
     }
@@ -71,11 +60,13 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Post $post)
     {
         //
-        $post = Post::findOrFail($id);
-        return view('admin.posts.edit', compact('post'));
+        if (!$post) {
+            abort(404);
+        }
+        return view('admin.posts.show', compact('post'));
     }
 
     /**
@@ -84,10 +75,12 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Post $post)
     {
         //
-        $post = Post::findOrFail($id);
+        if (!$post) {
+            abort(404);
+        }
         return view('admin.posts.edit', compact('post'));
     }
 
